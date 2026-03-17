@@ -26,6 +26,7 @@ function createAspectScript(runtimeGlobal = globalThis) {
       lexicalObjects: [globalObject],
       lexicalFunctions: [],
       dynamicAspects: [],
+      receiver: globalObject,
     };
   }
 
@@ -432,6 +433,9 @@ function createAspectScript(runtimeGlobal = globalThis) {
   }
 
   function addDeployment(target, deployment) {
+    if (!deployment.__asTarget) {
+      deployment.__asTarget = target;
+    }
     ensureAspectList(target).push(deployment);
     return deployment;
   }
@@ -528,11 +532,19 @@ function createAspectScript(runtimeGlobal = globalThis) {
   }
 
   function currentVisibleAspects() {
+    const frame = currentFrame();
     return uniqueById([
       ...state.globalDeployments,
-      ...currentFrame().dynamicAspects,
+      ...frame.dynamicAspects,
       ...aspectsFromLexicalContexts(),
-    ]).filter((aspect) => aspect.level === state.currentLevel && !isSuppressed(aspect));
+    ]).filter((aspect) => {
+      if (aspect.__asTarget === globalObject &&
+          frame.receiver &&
+          frame.receiver !== globalObject) {
+        return false;
+      }
+      return aspect.level === state.currentLevel && !isSuppressed(aspect);
+    });
   }
 
   function evaluatePointcut(aspect, internal, env) {
@@ -603,11 +615,48 @@ function createAspectScript(runtimeGlobal = globalThis) {
       afterMatches: afters.length,
     });
 
-    let chain = function base(...args) {
-      return baseProceed(...args);
+    const joinPointFrame = currentFrame();
+    const executeBase = (...args) => {
+      const previousJP = state.currentJP;
+      const activeFrame = currentFrame();
+      const switchedFrame = activeFrame !== joinPointFrame;
+      if (switchedFrame) {
+        state.frameStack.push(joinPointFrame);
+      }
+      state.currentJP = internal;
+      try {
+        return baseProceed(...args);
+      } finally {
+        state.currentJP = previousJP;
+        if (switchedFrame) {
+          state.frameStack.pop();
+        }
+      }
     };
 
-    for (const item of beforeAndAround) {
+    let chain = function base(...args) {
+      return executeBase(...args);
+    };
+
+    let orderedBeforeAndAround = beforeAndAround;
+    if (beforeAndAround.length > 1 &&
+        beforeAndAround.every((item) => item.aspect.kind === AspectScript.BEFORE)) {
+      const noArgBefore = [];
+      const withArgBefore = [];
+      for (const item of beforeAndAround) {
+        const rawAdvice = item.aspect.advice && item.aspect.advice.__asOriginal
+          ? item.aspect.advice.__asOriginal
+          : item.aspect.advice;
+        if (!rawAdvice || rawAdvice.length === 0) {
+          noArgBefore.push(item);
+        } else {
+          withArgBefore.push(item);
+        }
+      }
+      orderedBeforeAndAround = noArgBefore.concat(withArgBefore);
+    }
+
+    for (const item of orderedBeforeAndAround) {
       const next = chain;
       const aspect = item.aspect;
       const env = item.env;
@@ -623,19 +672,13 @@ function createAspectScript(runtimeGlobal = globalThis) {
       }
     }
 
-    const previousJP = state.currentJP;
-    state.currentJP = internal;
-    try {
-      const result = chain(...(internal.args || []));
-      internal.finalResult = result;
-      internal.value = internal.kind === "get" || internal.kind === "varGet" ? result : internal.value;
-      for (const aspect of afters) {
-        runAfterAdvice(aspect, internal, (...proceedArgs) => baseProceed(...(proceedArgs.length ? proceedArgs : (internal.args || []))));
-      }
-      return result;
-    } finally {
-      state.currentJP = previousJP;
+    const result = chain(...(internal.args || []));
+    internal.finalResult = result;
+    internal.value = internal.kind === "get" || internal.kind === "varGet" ? result : internal.value;
+    for (const aspect of afters) {
+      runAfterAdvice(aspect, internal, (...proceedArgs) => executeBase(...(proceedArgs.length ? proceedArgs : (internal.args || []))));
     }
+    return result;
   }
 
   function captureLexicalObjects() {
@@ -715,6 +758,7 @@ function createAspectScript(runtimeGlobal = globalThis) {
           { id: 2000000, value: wrapped },
         ]).map((entry) => entry.value),
         dynamicAspects: uniqueById(nextDynamicAspects),
+        receiver: target,
       };
       const original = fn;
       const previousPending = state.pendingCalls[state.pendingCalls.length - 1];
@@ -755,6 +799,9 @@ function createAspectScript(runtimeGlobal = globalThis) {
       configurable: true,
     });
     wrapped.prototype = fn.prototype;
+    if (wrapped.prototype && wrapped.prototype.constructor === fn) {
+      wrapped.prototype.constructor = wrapped;
+    }
     return wrapped;
   }
 
@@ -959,6 +1006,27 @@ function createAspectScript(runtimeGlobal = globalThis) {
 
   function makeObjectLiteral(entries) {
     const target = {};
+    const initJP = {
+      kind: "init",
+      target,
+      fun: Object,
+      args: [],
+      methods: [],
+      parent: state.currentJP,
+      withinObjects: currentFrame().lexicalObjects.slice(),
+    };
+    for (const aspect of currentVisibleAspects()) {
+      if (aspect.d(initJP)) {
+        addDeployment(target, createDeployment({
+          kind: aspect.kind,
+          pointcut: aspect.pointcut,
+          advice: aspect.advice,
+          allowReentrance: aspect.allowReentrance,
+          level: aspect.level,
+          strategy: [aspect.c, aspect.d, aspect.f],
+        }));
+      }
+    }
     for (const entry of entries) {
       setProp(target, entry.key, entry.value);
     }

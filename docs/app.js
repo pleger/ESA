@@ -79,6 +79,45 @@ AJS.deploy(aspect, function () {
 work();
 Testing.check("inside");`,
   },
+  {
+    id: "nobr-reentrancy",
+    title: "noBR Reentrancy",
+    description: "Use noBR to avoid repeated triggering across recursive execution.",
+    code: `function f(n) {
+  if (n > 0) {
+    return f(n - 1);
+  }
+  return 0;
+}
+
+AJS.before(PCs.noBR(PCs.exec("f")), function () {
+  Testing.flag("adv");
+});
+
+f(3);
+Testing.check("adv");`,
+  },
+  {
+    id: "level-cflow",
+    title: "Level-Sensitive CFlow",
+    description: "Check that advice-level calls do not pollute base-level control flow.",
+    code: `function x() {}
+function z() {}
+
+AJS.before(PCs.exec("x"), function () {
+  AJS.down(function () {
+    Testing.flag("x-advice");
+    z();
+  });
+});
+
+AJS.before(PCs.exec("z").inCFlowOf(PCs.exec("x")), function () {
+  Testing.flag("z-in-x-cflow");
+});
+
+x();
+Testing.check("x-advice");`,
+  },
 ];
 
 const exampleList = document.getElementById("example-list");
@@ -86,10 +125,12 @@ const editor = document.getElementById("editor");
 const output = document.getElementById("output");
 const traceBody = document.getElementById("trace-body");
 const runButton = document.getElementById("run-button");
+const exportTraceButton = document.getElementById("export-trace-button");
 const resetButton = document.getElementById("reset-button");
 const runnerFrame = document.getElementById("runner-frame");
 
 let currentExample = examples[0];
+let lastTraceEntries = [];
 
 function stripLoads(source) {
   return source
@@ -130,10 +171,13 @@ function clearOutput() {
 
 function clearTrace() {
   traceBody.innerHTML = "";
+  lastTraceEntries = [];
 }
 
 function renderTrace(entries) {
+  lastTraceEntries = entries.slice();
   clearTrace();
+  lastTraceEntries = entries.slice();
   entries.forEach((entry, index) => {
     const tr = document.createElement("tr");
     tr.className = "trace-row" + (entry.matched ? " matched" : "");
@@ -145,6 +189,25 @@ function renderTrace(entries) {
     `;
     traceBody.appendChild(tr);
   });
+}
+
+function exportTraceJson() {
+  if (!lastTraceEntries.length) {
+    appendOutput("No trace to export. Run an example first.");
+    return;
+  }
+  const payload = JSON.stringify(lastTraceEntries, null, 2);
+  const blob = new Blob([payload], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "aspectscript-trace-" + stamp + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  appendOutput("Trace exported as JSON.");
 }
 
 function makeTesting(logs) {
@@ -233,6 +296,7 @@ function runCurrentCode() {
 }
 
 runButton.addEventListener("click", runCurrentCode);
+exportTraceButton.addEventListener("click", exportTraceJson);
 resetButton.addEventListener("click", () => {
   editor.value = currentExample.code;
   clearOutput();

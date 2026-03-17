@@ -4,9 +4,43 @@
   "description": "AspectScript runtime, instrumentation, and CLI tooling",
   "main": "aspectscript.js",
   "types": "index.d.ts",
-  "private": true,
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pleger/aspectscript.git"
+  },
+  "homepage": "https://github.com/pleger/aspectscript#readme",
+  "bugs": {
+    "url": "https://github.com/pleger/aspectscript/issues"
+  },
+  "keywords": [
+    "aspect-oriented-programming",
+    "aspectscript",
+    "javascript",
+    "typescript",
+    "aop",
+    "join-point"
+  ],
+  "files": [
+    "aspectscript.js",
+    "aspectscript-cli.js",
+    "instrument.js",
+    "transform-cache.js",
+    "run-script.js",
+    "run-tests.js",
+    "run-conformance.js",
+    "index.d.ts",
+    "conformance/",
+    "README.md",
+    "GITHUB_USAGE.md",
+    "PATTERNS.md",
+    "ROADMAP_10_STEPS.md",
+    "NPM_PUBLISH.md",
+    "STEP1_TRIAGE.md"
+  ],
   "bin": {
-    "aspectscript": "./aspectscript-cli.js"
+    "aspectscript": "aspectscript-cli.js"
   },
   "scripts": {
     "test": "node run-tests.js",

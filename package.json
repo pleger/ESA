@@ -1,6 +1,6 @@
 {
   "name": "aspectscript",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AspectScript runtime, instrumentation, and CLI tooling",
   "main": "aspectscript.js",
   "types": "index.d.ts",

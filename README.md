@@ -2,6 +2,55 @@
 
 An implementation of the AspectScript extension language for JavaScript, based on the AOSD 2010 paper "AspectScript: Expressive Aspects for the Web".
 
+## Quick start (npm)
+
+Install:
+
+```bash
+npm install aspectscript
+```
+
+### JavaScript example
+
+```js
+const AJS = require("aspectscript");
+const PCs = AJS.Pointcuts;
+
+AJS.before(PCs.event("purchase"), function (jp) {
+  console.log("purchase observed:", jp.orderId, jp.total);
+});
+
+AJS.event("purchase", { orderId: "A-100", total: 42 }, function () {
+  console.log("inside purchase block");
+});
+```
+
+### TypeScript example
+
+```ts
+import AspectScript = require("aspectscript");
+
+const AJS = AspectScript;
+const PCs = AJS.Pointcuts;
+
+AJS.around(PCs.event("audit"), (jp) => {
+  console.log("audit event:", jp.action);
+  return jp.proceed();
+});
+
+AJS.event("audit", { action: "DELETE_USER" }, () => {
+  console.log("business logic");
+});
+```
+
+### Running instrumented scripts (`exec`, `call`, `get`, `set`, ...)
+
+Use the CLI runner so your file is instrumented automatically:
+
+```bash
+npx aspectscript run your-script.js
+```
+
 ## What is included
 
 - A runtime and source instrumenter for AspectScript.

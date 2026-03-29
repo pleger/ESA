@@ -1,5 +1,7 @@
 # ESA / AspectScript
 
+[![npm version](https://img.shields.io/npm/v/%40pleger%2Fesa-js)](https://www.npmjs.com/package/@pleger/esa-js)
+
 An implementation of ESA-JS (Expressive Stateful Aspects) and AspectScript for JavaScript.
 
 ## Links

@@ -6,7 +6,7 @@ This project is configured for npm packaging, with:
 - `bin` command (`aspectscript`)
 
 Current state:
-- `package.json` still has `"private": true` to prevent accidental publish.
+- `package.json` is publish-ready (`"private": false`).
 
 ## Checklist
 
@@ -14,27 +14,24 @@ Current state:
 
 ```json
 {
-  "name": "aspectscript",
-  "version": "0.1.0",
-  "description": "AspectScript runtime and tooling",
+  "name": "esa-js",
+  "version": "0.2.0",
+  "description": "ESA-JS and AspectScript runtime and tooling",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pleger/aspectscript.git"
+    "url": "https://github.com/pleger/ESA.git"
   }
 }
 ```
 
-2. Remove publish guard
-- Change `"private": true` to `"private": false` (or remove `private`).
-
-3. Dry run package contents
+2. Dry run package contents
 
 ```bash
 npm pack --dry-run
 ```
 
-4. Verify commands
+3. Verify commands
 
 ```bash
 npm test
@@ -42,7 +39,7 @@ npm run test:conformance
 npx aspectscript --help
 ```
 
-5. Publish
+4. Publish
 
 ```bash
 npm publish --access public

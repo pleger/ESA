@@ -1,3 +1,15 @@
+let createESAExtension = null;
+if (typeof globalThis !== "undefined" && typeof globalThis.createESA === "function") {
+  createESAExtension = globalThis.createESA;
+}
+if (typeof require === "function") {
+  try {
+    ({ createESA: createESAExtension } = require("./esa"));
+  } catch (error) {
+    // keep global fallback if available
+  }
+}
+
 function createAspectScript(runtimeGlobal = globalThis) {
   const globalObject = runtimeGlobal;
   const state = {
@@ -1189,6 +1201,16 @@ function createAspectScript(runtimeGlobal = globalThis) {
     __makeObjectLiteral: makeObjectLiteral,
     __scope: scope,
   };
+
+  if (typeof createESAExtension === "function") {
+    const ESA = createESAExtension(AspectScript);
+    AspectScript.ESA = ESA;
+    AspectScript.PTs = ESA.Pointcuts;
+    if (runtimeGlobal && (typeof runtimeGlobal === "object" || typeof runtimeGlobal === "function")) {
+      runtimeGlobal.ESA = ESA;
+      runtimeGlobal.PTs = ESA.Pointcuts;
+    }
+  }
 
   AspectScript.createAspectScript = createAspectScript;
 

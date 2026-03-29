@@ -1,21 +1,24 @@
 {
-  "name": "aspectscript",
-  "version": "0.1.1",
-  "description": "AspectScript runtime, instrumentation, and CLI tooling",
+  "name": "esa-js",
+  "version": "0.2.0",
+  "description": "ESA-JS and AspectScript runtime, instrumentation, and CLI tooling",
   "main": "aspectscript.js",
   "types": "index.d.ts",
   "private": false,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pleger/aspectscript.git"
+    "url": "git+https://github.com/pleger/ESA.git"
   },
-  "homepage": "https://github.com/pleger/aspectscript#readme",
+  "homepage": "https://github.com/pleger/ESA#readme",
   "bugs": {
-    "url": "https://github.com/pleger/aspectscript/issues"
+    "url": "https://github.com/pleger/ESA/issues"
   },
   "keywords": [
     "aspect-oriented-programming",
+    "esa",
+    "stateful-aspects",
+    "tracematch",
     "aspectscript",
     "javascript",
     "typescript",
@@ -24,6 +27,7 @@
   ],
   "files": [
     "aspectscript.js",
+    "esa.js",
     "aspectscript-cli.js",
     "instrument.js",
     "transform-cache.js",
@@ -39,8 +43,14 @@
     "NPM_PUBLISH.md",
     "STEP1_TRIAGE.md"
   ],
+  "exports": {
+    ".": "./aspectscript.js",
+    "./esa": "./esa.js",
+    "./instrument": "./instrument.js"
+  },
   "bin": {
-    "aspectscript": "aspectscript-cli.js"
+    "aspectscript": "aspectscript-cli.js",
+    "esa": "aspectscript-cli.js"
   },
   "scripts": {
     "test": "node run-tests.js",

@@ -1,19 +1,19 @@
-# AspectScript
+# ESA / AspectScript
 
-An implementation of the AspectScript extension language for JavaScript, based on the AOSD 2010 paper "AspectScript: Expressive Aspects for the Web".
+An implementation of ESA-JS (Expressive Stateful Aspects) and AspectScript for JavaScript.
 
 ## Quick start (npm)
 
 Install:
 
 ```bash
-npm install aspectscript
+npm install esa-js
 ```
 
 ### JavaScript example
 
 ```js
-const AJS = require("aspectscript");
+const AJS = require("esa-js");
 const PCs = AJS.Pointcuts;
 
 AJS.before(PCs.event("purchase"), function (jp) {
@@ -28,7 +28,7 @@ AJS.event("purchase", { orderId: "A-100", total: 42 }, function () {
 ### TypeScript example
 
 ```ts
-import AspectScript = require("aspectscript");
+import AspectScript = require("esa-js");
 
 const AJS = AspectScript;
 const PCs = AJS.Pointcuts;
@@ -48,16 +48,35 @@ AJS.event("audit", { action: "DELETE_USER" }, () => {
 Use the CLI runner so your file is instrumented automatically:
 
 ```bash
-npx aspectscript run your-script.js
+npx esa run your-script.js
+```
+
+### ESA stateful example
+
+```js
+const AJS = require("esa-js");
+const ESA = AJS.ESA;
+const PTs = ESA.Pointcuts;
+
+function a(v) {}
+function b() {}
+
+const callA = PTs.call(a).and((jp, env) => env.bind("value", jp.args[0]));
+
+const handler = ESA.deploy({
+  kind: ESA.BEFORE,
+  pattern: PTs.repeatUntil(callA, PTs.call(b)),
+  advice: (jp, env) => console.log("values:", env.value),
+});
 ```
 
 ## What is included
 
-- A runtime and source instrumenter for AspectScript.
+- A runtime and source instrumenter for AspectScript and ESA-JS.
 - A Node-based test runner that executes the original `tests/test*.js` suite while ignoring legacy `load(...)` lines.
 - A CLI command (`aspectscript`) for running scripts and tests.
 - TypeScript type definitions (`index.d.ts`).
-- A static playground in `docs/` with:
+- A static playground in `docs/` with ESA-focused examples and:
   - editable examples
   - execution output
   - join point tracing
@@ -116,9 +135,9 @@ npm run test:conformance
 Use the CLI command:
 
 ```bash
-npx aspectscript run tests/test-ex.js
-npx aspectscript test
-npx aspectscript test --failed
+npx esa run tests/test-ex.js
+npx esa test
+npx esa test --failed
 ```
 
 Serve the playground locally from `docs/`:
@@ -138,4 +157,4 @@ For package publishing readiness, see [NPM_PUBLISH.md](./NPM_PUBLISH.md).
 
 ## Current test status
 
-The current implementation passes 105 of 105 legacy tests.
+The current implementation passes the full legacy suite plus ESA split-case tests.

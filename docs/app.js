@@ -1,122 +1,144 @@
 const examples = [
   {
-    id: "before-exec",
-    title: "Before Advice",
-    description: "Intercept a function execution and record a flag before the body runs.",
-    code: `function greet(name) {
-  print("Hello, " + name + "!");
+    id: "simple-match",
+    title: "Simple Match",
+    description: "Deploy an ESA aspect that matches one call join point.",
+    code: `function a() {
+  Testing.flag("a");
 }
 
-AJS.before(PCs.exec(greet), function () {
+var aspect = {
+  kind: ESA.BEFORE,
+  pattern: PTs.call(a),
+  advice: function () {
+    Testing.flag("match");
+  }
+};
+
+var h = ESA.deploy(aspect);
+a();
+ESA.undeploy(h);
+Testing.check("match", "a");`,
+  },
+  {
+    id: "sequence",
+    title: "Sequential Pattern",
+    description: "Match the pattern a then b and advise before b.",
+    code: `function a() { Testing.flag("a"); }
+function b() { Testing.flag("b"); }
+
+var aspect = {
+  kind: ESA.BEFORE,
+  pattern: PTs.seq(PTs.call(a), PTs.call(b)),
+  advice: function () {
+    Testing.flag("ab");
+  }
+};
+
+var h = ESA.deploy(aspect);
+a();
+b();
+ESA.undeploy(h);
+Testing.check("a", "ab", "b");`,
+  },
+  {
+    id: "repeat-until",
+    title: "repeatUntil",
+    description: "Accumulate bindings until a terminal event appears.",
+    code: `function a(v) { Testing.flag("a"); }
+function b() { Testing.flag("b"); }
+
+var callA = PTs.call(a).and(function (jp, env) {
+  return env.bind("value", jp.args[0]);
+});
+
+var aspect = {
+  kind: ESA.BEFORE,
+  pattern: PTs.repeatUntil(callA, PTs.call(b)),
+  advice: function (jp, env) {
+    var values = env.value instanceof Array ? env.value : [env.value];
+    Testing.flag("sum:" + values.reduce(function (x, y) { return x + y; }, 0));
+  }
+};
+
+var h = ESA.deploy(aspect);
+a(1);
+a(2);
+b();
+ESA.undeploy(h);
+Testing.check("a", "a", "sum:3", "b");`,
+  },
+  {
+    id: "tracematch",
+    title: "Tracematch Deploy",
+    description: "Use ESA.tracematchLib with an explicit alphabet.",
+    code: `function a(v) { Testing.flag("a"); }
+function b() { Testing.flag("b"); }
+
+var bindA = PTs.call(a).and(function (jp, env) {
+  return env.bind("value", jp.args[0]);
+});
+
+var aspect = {
+  kind: ESA.BEFORE,
+  pattern: PTs.starUntil(bindA, PTs.call(b)),
+  advice: function (jp, env) {
+    var values = env.value instanceof Array ? env.value : [env.value];
+    Testing.flag("sum:" + values.reduce(function (x, y) { return x + y; }, 0));
+  }
+};
+
+var h = ESA.tracematchLib.deploy(aspect, [PTs.call(a), PTs.call(b)]);
+a(1);
+a(5);
+a(10);
+b();
+ESA.undeploy(h);
+Testing.check("a", "a", "a", "sum:16", "b");`,
+  },
+  {
+    id: "chain-advice",
+    title: "Chain Advice",
+    description: "Schedule multiple matches through tracematch chainAdvice.",
+    code: `function a() { Testing.flag("a"); }
+function b() { Testing.flag("b"); }
+
+var aspect = {
+  kind: ESA.AROUND,
+  pattern: PTs.seq(PTs.call(a), PTs.call(b)),
+  matching: ESA.matching.multiple,
+  advising: function (matchCells, jp, advice) {
+    return ESA.tracematchLib.chainAdvice(matchCells, ESA.AROUND, advice)(jp);
+  },
+  advice: function (jp) {
+    Testing.flag("match");
+    return jp.proceed();
+  }
+};
+
+var h = ESA.deploy(aspect);
+a();
+a();
+a();
+b();
+ESA.undeploy(h);
+Testing.check("a", "a", "a", "match", "match", "match", "b");`,
+  },
+  {
+    id: "aspectscript-compatible",
+    title: "AspectScript Compatible",
+    description: "ESA runs alongside regular AspectScript APIs.",
+    code: `function hello(name) {
+  print("hello " + name);
+}
+
+var h = AJS.before(PCs.exec(hello), function () {
   Testing.flag("before");
 });
 
-greet("AspectScript");
+hello("ESA");
+AJS.undeploy(h);
 Testing.check("before");`,
-  },
-  {
-    id: "around-call",
-    title: "Around Advice",
-    description: "Change call-time arguments and return value through proceed.",
-    code: `function add(a, b) {
-  return a + b;
-}
-
-AJS.around(PCs.call("add"), function (jp) {
-  Testing.flag("around");
-  return jp.proceed(10, 20);
-});
-
-var result = add(1, 2);
-print("result =", result);
-Testing.check("around");`,
-  },
-  {
-    id: "property-write",
-    title: "Property Write",
-    description: "Observe writes to a specific property on an object.",
-    code: `var account = { balance: 0 };
-
-AJS.before(PCs.set(account, "balance"), function (jp) {
-  print("writing balance:", jp.value);
-  Testing.flag("set");
-});
-
-account.balance = 250;
-Testing.check("set");`,
-  },
-  {
-    id: "custom-event",
-    title: "Custom Event",
-    description: "Emit an application-level event and advise it like any other join point.",
-    code: `AJS.after(PCs.event("save"), function (jp) {
-  print("saved:", jp.recordId);
-  Testing.flag("after-event");
-});
-
-AspectScript.event("save", { recordId: 42 }, function () {
-  print("save thunk running");
-});
-
-Testing.check("after-event");`,
-  },
-  {
-    id: "dynamic-deploy",
-    title: "Dynamic Deployment",
-    description: "Deploy an aspect only for the dynamic extent of a block.",
-    code: `function work() {
-  print("working");
-}
-
-var aspect = AJS.aspect(AJS.BEFORE, PCs.exec(work), function () {
-  Testing.flag("inside");
-});
-
-AJS.deploy(aspect, function () {
-  work();
-});
-
-work();
-Testing.check("inside");`,
-  },
-  {
-    id: "nobr-reentrancy",
-    title: "noBR Reentrancy",
-    description: "Use noBR to avoid repeated triggering across recursive execution.",
-    code: `function f(n) {
-  if (n > 0) {
-    return f(n - 1);
-  }
-  return 0;
-}
-
-AJS.before(PCs.noBR(PCs.exec("f")), function () {
-  Testing.flag("adv");
-});
-
-f(3);
-Testing.check("adv");`,
-  },
-  {
-    id: "level-cflow",
-    title: "Level-Sensitive CFlow",
-    description: "Check that advice-level calls do not pollute base-level control flow.",
-    code: `function x() {}
-function z() {}
-
-AJS.before(PCs.exec("x"), function () {
-  AJS.down(function () {
-    Testing.flag("x-advice");
-    z();
-  });
-});
-
-AJS.before(PCs.exec("z").inCFlowOf(PCs.exec("x")), function () {
-  Testing.flag("z-in-x-cflow");
-});
-
-x();
-Testing.check("x-advice");`,
   },
 ];
 
@@ -202,7 +224,7 @@ function exportTraceJson() {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const a = document.createElement("a");
   a.href = url;
-  a.download = "aspectscript-trace-" + stamp + ".json";
+  a.download = "esa-trace-" + stamp + ".json";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -272,6 +294,8 @@ function prepareFrame(logs) {
   frameWindow.AspectScript = window.AspectScript.createAspectScript(frameWindow);
   frameWindow.AJS = frameWindow.AspectScript;
   frameWindow.PCs = frameWindow.AspectScript.Pointcuts;
+  frameWindow.ESA = frameWindow.AspectScript.ESA;
+  frameWindow.PTs = frameWindow.AspectScript.PTs || (frameWindow.ESA && frameWindow.ESA.Pointcuts);
   frameWindow.Testing = makeTesting(logs);
   frameWindow.AspectScript.tracer.enable();
 

@@ -3,10 +3,11 @@
 This project is configured for npm packaging, with:
 - `main` entry (`aspectscript.js`)
 - `types` entry (`index.d.ts`)
-- `bin` command (`aspectscript`)
+- `bin` commands (`aspectscript`, `esa`)
 
 Current state:
 - `package.json` is publish-ready (`"private": false`).
+- Package name is scoped: `@pleger/esa-js`.
 
 ## Checklist
 
@@ -15,7 +16,7 @@ Current state:
 ```json
 {
   "name": "@pleger/esa-js",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ESA-JS and AspectScript runtime and tooling",
   "license": "MIT",
   "repository": {
@@ -43,6 +44,13 @@ npx aspectscript --help
 
 ```bash
 npm publish --access public
+```
+
+5. Verify published page
+
+```bash
+npm view @pleger/esa-js version
+open https://www.npmjs.com/package/@pleger/esa-js
 ```
 
 ## Optional hardening

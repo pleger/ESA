@@ -2,6 +2,12 @@
 
 An implementation of ESA-JS (Expressive Stateful Aspects) and AspectScript for JavaScript.
 
+## Links
+
+- Playground: https://pleger.github.io/esajs/
+- GitHub: https://github.com/pleger/ESA
+- npm: https://www.npmjs.com/package/@pleger/esa-js
+
 ## Quick start (npm)
 
 Install:
@@ -80,6 +86,12 @@ const handler = ESA.deploy({
   - editable examples
   - execution output
   - join point tracing
+
+## Online playground
+
+You can run ESA examples directly in the browser at:
+
+https://pleger.github.io/esajs/
 
 ## Local usage
 

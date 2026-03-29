@@ -14,7 +14,7 @@ Current state:
 
 ```json
 {
-  "name": "esa-js",
+  "name": "@pleger/esa-js",
   "version": "0.2.0",
   "description": "ESA-JS and AspectScript runtime and tooling",
   "license": "MIT",

@@ -1,5 +1,5 @@
 {
-  "name": "esa-js",
+  "name": "@pleger/esa-js",
   "version": "0.2.0",
   "description": "ESA-JS and AspectScript runtime, instrumentation, and CLI tooling",
   "main": "aspectscript.js",

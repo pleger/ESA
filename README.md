@@ -7,13 +7,13 @@ An implementation of ESA-JS (Expressive Stateful Aspects) and AspectScript for J
 Install:
 
 ```bash
-npm install esa-js
+npm install @pleger/esa-js
 ```
 
 ### JavaScript example
 
 ```js
-const AJS = require("esa-js");
+const AJS = require("@pleger/esa-js");
 const PCs = AJS.Pointcuts;
 
 AJS.before(PCs.event("purchase"), function (jp) {
@@ -28,7 +28,7 @@ AJS.event("purchase", { orderId: "A-100", total: 42 }, function () {
 ### TypeScript example
 
 ```ts
-import AspectScript = require("esa-js");
+import AspectScript = require("@pleger/esa-js");
 
 const AJS = AspectScript;
 const PCs = AJS.Pointcuts;
@@ -54,7 +54,7 @@ npx esa run your-script.js
 ### ESA stateful example
 
 ```js
-const AJS = require("esa-js");
+const AJS = require("@pleger/esa-js");
 const ESA = AJS.ESA;
 const PTs = ESA.Pointcuts;
 
